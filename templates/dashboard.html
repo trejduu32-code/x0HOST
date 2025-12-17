@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>x0HOST Dashboard</title>
+<style>
+body{background:#020617;color:#fff;font-family:system-ui;padding:30px}
+table{width:100%;border-collapse:collapse}
+td,th{padding:10px;border-bottom:1px solid #1f2937}
+a{color:#22c55e}
+</style>
+</head>
+<body>
+<h1>x0HOST Dashboard</h1>
+<table>
+<tr><th>ID</th><th>Views</th><th>Expires</th><th>Delete</th></tr>
+{% for s in sites %}
+<tr>
+<td><a href="/h/{{s[0]}}/" target="_blank">{{s[0]}}</a></td>
+<td>{{s[2]}}</td>
+<td>{{s[3] or "Never"}}</td>
+<td><a href="/delete/{{s[0]}}">Delete</a></td>
+</tr>
+{% endfor %}
+</table>
+</body>
+</script>
+</html>
