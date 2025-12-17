@@ -7,18 +7,29 @@ body{background:#020617;color:#fff;font-family:system-ui;padding:30px}
 table{width:100%;border-collapse:collapse}
 td,th{padding:10px;border-bottom:1px solid #1f2937}
 a{color:#22c55e}
+.action-links a {
+    margin-right: 10px;
+    text-decoration: none;
+}
+.action-links a:last-child {
+    margin-right: 0;
+}
 </style>
 </head>
 <body>
 <h1>x0HOST Dashboard</h1>
 <table>
-<tr><th>ID</th><th>Views</th><th>Expires</th><th>Delete</th></tr>
+<tr><th>ID</th><th>Views</th><th>Expires</th><th>Actions</th></tr>
 {% for s in sites %}
 <tr>
 <td><a href="/h/{{s[0]}}/" target="_blank">{{s[0]}}</a></td>
 <td>{{s[2]}}</td>
 <td>{{s[3] or "Never"}}</td>
-<td><a href="/delete/{{s[0]}}">Delete</a></td>
+<td class="action-links">
+    <a href="/edit/{{s[0]}}">Edit</a>
+    <a href="/h/{{s[0]}}/" target="_blank">View</a>
+    <a href="/delete/{{s[0]}}" onclick="return confirm('Are you sure you want to delete this site?')">Delete</a>
+</td>
 </tr>
 {% endfor %}
 </table>

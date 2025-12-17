@@ -7,17 +7,59 @@ body{background:#020617;color:#e5e7eb;font-family:system-ui;display:flex;justify
 .box{margin-top:80px;background:#0f172a;padding:30px;border-radius:14px;width:360px}
 input,button{width:100%;padding:12px;margin-top:10px;border-radius:10px;border:none}
 button{background:#10b981;font-weight:600}
+.file-input-wrapper {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+    width: 100%;
+}
+
+.file-input-wrapper input[type=file] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.file-input-wrapper .btn {
+    display: inline-block;
+    padding: 12px;
+    background: #334155;
+    color: white;
+    border-radius: 10px;
+    width: 100%;
+    text-align: center;
+    margin-top: 10px;
+}
 </style>
 </head>
 <body>
 <div class="box">
 <h1>x0HOST by ExploitZ3r0</h1>
 <form method="post" enctype="multipart/form-data">
-<input type="file" name="file" required>
+<div class="file-input-wrapper">
+    <div class="btn">Choose Files</div>
+    <input type="file" name="files" multiple>
+</div>
 <input name="site_id" placeholder="Custom ID (optional)">
 <input type="date" name="expires">
 <button>Upload</button>
 </form>
 </div>
+
+<script>
+// Update button text with selected files
+document.querySelector('input[name="files"]').addEventListener('change', function(e) {
+    const btn = document.querySelector('.btn');
+    if (this.files.length > 0) {
+        btn.textContent = `${this.files.length} file(s) selected`;
+    } else {
+        btn.textContent = 'Choose Files';
+    }
+});
+</script>
 </body>
 </html>

@@ -1,4 +1,5 @@
 import os, zipfile, sqlite3, uuid, shutil
+import json
 from datetime import datetime
 from flask import Flask, request, render_template, redirect, url_for, abort, Response, send_from_directory
 
@@ -12,6 +13,7 @@ BRAND_COMMENT = '<!-- x0HOST by ExploitZ3r0 -->'
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Max upload size 16MB
 
 # ---------- DATABASE ----------
 def db():
@@ -59,7 +61,8 @@ def index():
     cleanup()
 
     if request.method == "POST":
-        file = request.files["file"]
+        # Handle multiple file uploads
+        files = request.files.getlist("files")
         site_id = request.form.get("site_id") or uuid.uuid4().hex[:6]
         expires = request.form.get("expires") or None
 
@@ -69,14 +72,23 @@ def index():
 
         os.makedirs(site_path)
 
-        if file.filename.endswith(".zip"):
-            zip_path = os.path.join(site_path, "site.zip")
-            file.save(zip_path)
-            with zipfile.ZipFile(zip_path) as z:
-                z.extractall(site_path)
-            os.remove(zip_path)
+        # Process uploaded files
+        if len(files) > 0 and files[0].filename != '':
+            for file in files:
+                if file and file.filename != '':
+                    filename = file.filename
+                    file.save(os.path.join(site_path, filename))
         else:
-            file.save(os.path.join(site_path, "index.html"))
+            # Fallback to single file upload for backward compatibility
+            file = request.files["file"]
+            if file.filename.endswith(".zip"):
+                zip_path = os.path.join(site_path, "site.zip")
+                file.save(zip_path)
+                with zipfile.ZipFile(zip_path) as z:
+                    z.extractall(site_path)
+                os.remove(zip_path)
+            else:
+                file.save(os.path.join(site_path, "index.html"))
 
         with db() as c:
             c.execute(
@@ -100,6 +112,62 @@ def delete(site_id):
     with db() as c:
         c.execute("DELETE FROM sites WHERE id=?", (site_id,))
     return redirect(url_for("dashboard"))
+
+@app.route("/edit/<site_id>")
+def edit_site(site_id):
+    site_path = os.path.join(UPLOAD_DIR, site_id)
+    if not os.path.exists(site_path):
+        abort(404)
+    
+    # List all files in the site directory
+    files = []
+    for root, dirs, filenames in os.walk(site_path):
+        for filename in filenames:
+            rel_dir = os.path.relpath(root, site_path)
+            if rel_dir == ".":
+                files.append(filename)
+            else:
+                files.append(os.path.join(rel_dir, filename))
+    
+    return render_template("editor.html", site_id=site_id, files=files)
+
+@app.route("/api/files/<site_id>")
+def api_get_files(site_id):
+    site_path = os.path.join(UPLOAD_DIR, site_id)
+    if not os.path.exists(site_path):
+        abort(404)
+        
+    files = {}
+    for file in request.args.getlist('file'):
+        filepath = os.path.join(site_path, file)
+        if os.path.exists(filepath) and os.path.isfile(filepath):
+            with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+                files[file] = f.read()
+    
+    return json.dumps(files)
+
+@app.route("/api/save/<site_id>", methods=["POST"])
+def api_save_file(site_id):
+    site_path = os.path.join(UPLOAD_DIR, site_id)
+    if not os.path.exists(site_path):
+        abort(404)
+        
+    data = request.get_json()
+    filename = data.get('filename')
+    content = data.get('content')
+    
+    if not filename:
+        return "Filename is required", 400
+    
+    filepath = os.path.join(site_path, filename)
+    
+    # Create directories if needed
+    os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else site_path, exist_ok=True)
+    
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(content)
+    
+    return "Saved successfully"
 
 @app.route("/h/<site_id>/")
 @app.route("/h/<site_id>/<path:file>")
